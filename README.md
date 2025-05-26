@@ -32,7 +32,9 @@ https://github.com/user-attachments/assets/56bc7080-f2e3-4367-af22-6bf2245ff6cb
 
 ### Additional Demo
 
-https://github.com/boshjerns/Browser-Use-retro-web-ui/raw/main/assets/1243.mp4
+<video src="https://github.com/boshjerns/Browser-Use-retro-web-ui/raw/main/assets/1243.mp4" controls="controls" style="max-width: 730px;">
+<a href="https://github.com/boshjerns/Browser-Use-retro-web-ui/raw/main/assets/1243.mp4">Download the video</a>
+</video>
 
 *Extended demonstration of Browser Use WebUI features and capabilities.*
 
