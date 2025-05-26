@@ -12,7 +12,7 @@
 
 **This is my fun retro RGB-themed user interface take on the standard Browser-Use WebUI!** 
 
-Everything else remains exactly the same as the original project - same functionality, same features, same capabilities. I just wanted to give it a cool retro aesthetic with RGB styling because why not make AI automation look awesome? 🌈
+Everything else remains exactly the same as the original project - same functionality, same features, same capabilities. I just wanted to give it a cool retro aesthetic with RGB styling because why not make AI automation look awesome? 
 
 This project builds upon the foundation of the [browser-use](https://github.com/browser-use/browser-use), which is designed to make websites accessible for AI agents.
 
