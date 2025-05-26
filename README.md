@@ -2,11 +2,17 @@
 
 <br/>
 
-[![GitHub stars](https://img.shields.io/github/stars/browser-use/web-ui?style=social)](https://github.com/browser-use/web-ui/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/boshjerns/Browser-Use-retro-web-ui?style=social)](https://github.com/boshjerns/Browser-Use-retro-web-ui/stargazers)
 [![Discord](https://img.shields.io/discord/1303749220842340412?color=7289DA&label=Discord&logo=discord&logoColor=white)](https://link.browser-use.com/discord)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.browser-use.com)
 [![WarmShao](https://img.shields.io/twitter/follow/warmshao?style=social)](https://x.com/warmshao)
 [![boshjerns](https://img.shields.io/twitter/follow/boshjerns?style=social)](https://x.com/boshjerns)
+
+## 🎨 Retro RGB UI Edition
+
+**This is my fun retro RGB-themed user interface take on the standard Browser-Use WebUI!** 
+
+Everything else remains exactly the same as the original project - same functionality, same features, same capabilities. I just wanted to give it a cool retro aesthetic with RGB styling because why not make AI automation look awesome? 🌈
 
 This project builds upon the foundation of the [browser-use](https://github.com/browser-use/browser-use), which is designed to make websites accessible for AI agents.
 
