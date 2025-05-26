@@ -23,7 +23,7 @@ This repository hosts an adapted version of the original [`browser-use/web-ui`](
 
 <img src="./assets/sssa.png" alt="Browser Use WebUI New Theme" width="full"/>
 
-<video src="https://github.com/user-attachments/assets/56bc7080-f2e3-4367-af22-6bf2245ff6cb" controls="controls">Your browser does not support playing this video!</video>
+<video src="./assets/1243.mov" controls="controls">Your browser does not support playing this video!</video>
 
 ## Installation Guide
 
