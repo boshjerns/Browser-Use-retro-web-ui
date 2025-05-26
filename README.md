@@ -1,4 +1,4 @@
-<img src="./assets/web-ui.png" alt="Browser Use Web UI" width="full"/>
+<img src="./assets/8fbae7aa-d71d-4358-846b-51ff156346a4.png" alt="Browser Use Web UI" width="full"/>
 
 <br/>
 
