@@ -33,8 +33,8 @@ Read the [quickstart guide](https://docs.browser-use.com/quickstart#prepare-the-
 
 #### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/browser-use/web-ui.git
-cd web-ui
+git clone https://github.com/boshjerns/Browser-Use-retro-web-ui.git
+cd Browser-Use-retro-web-ui
 ```
 
 #### Step 2: Set Up Python Environment
@@ -118,8 +118,8 @@ cp .env.example .env
 
 #### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/browser-use/web-ui.git
-cd web-ui
+git clone https://github.com/boshjerns/Browser-Use-retro-web-ui.git
+cd Browser-Use-retro-web-ui
 ```
 
 #### Step 2: Configure Environment
