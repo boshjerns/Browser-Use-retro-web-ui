@@ -6,10 +6,12 @@
 [![Discord](https://img.shields.io/discord/1303749220842340412?color=7289DA&label=Discord&logo=discord&logoColor=white)](https://link.browser-use.com/discord)
 [![Documentation](https://img.shields.io/badge/Documentation-📕-blue)](https://docs.browser-use.com)
 [![WarmShao](https://img.shields.io/twitter/follow/warmshao?style=social)](https://x.com/warmshao)
+[![boshjerns](https://img.shields.io/twitter/follow/boshjerns?style=social)](https://x.com/boshjerns)
 
 This project builds upon the foundation of the [browser-use](https://github.com/browser-use/browser-use), which is designed to make websites accessible for AI agents.
 
 We would like to officially thank [WarmShao](https://github.com/warmshao) for his contribution to this project.
+This repository hosts an adapted version of the original [`browser-use/web-ui`](https://github.com/browser-use/web-ui), featuring modifications and enhancements by **boshjerns**, including updates to the user interface theme. We encourage you to explore these refinements and check out the code!
 
 **WebUI:** is built on Gradio and supports most of `browser-use` functionalities. This UI is designed to be user-friendly and enables easy interaction with the browser agent.
 
