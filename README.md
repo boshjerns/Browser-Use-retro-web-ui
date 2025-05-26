@@ -31,11 +31,10 @@ https://github.com/user-attachments/assets/56bc7080-f2e3-4367-af22-6bf2245ff6cb
 *Watch the Browser Use WebUI in action - see how AI agents interact with websites through our intuitive interface.*
 
 ### Additional Demo
-<video width="100%" controls>
-  <source src="./assets/1243.mov" type="video/quicktime">
-  <source src="./assets/1243.mov" type="video/mp4">
-  Your browser does not support the video tag. <a href="./assets/1243.mov">Download the video</a>
-</video>
+
+[![Watch the demo](https://img.shields.io/badge/▶️_Watch_Demo-Click_Here-blue?style=for-the-badge)](./assets/1243.mov)
+
+[📥 Download Demo Video](./assets/1243.mov)
 
 *Extended demonstration of Browser Use WebUI features and capabilities.*
 
