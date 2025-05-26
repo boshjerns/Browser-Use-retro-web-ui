@@ -374,12 +374,12 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
     input_components = set(webui_manager.get_components())
     tab_components = {}
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
             mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         research_task = gr.Textbox(label="Research Task", lines=5,
                                    value="Give me a detailed travel plan to Switzerland from June 1st to 10th.",
                                    interactive=True)
@@ -394,7 +394,7 @@ def create_deep_research_agent_tab(webui_manager: WebuiManager):
     with gr.Row():
         stop_button = gr.Button("⏹️ Stop", variant="stop", scale=2)
         start_button = gr.Button("▶️ Run", variant="primary", scale=3)
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         markdown_display = gr.Markdown(label="Research Report")
         markdown_download = gr.File(label="Download Research Report", interactive=False)
     tab_components.update(

@@ -50,16 +50,16 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
     input_components = set(webui_manager.get_components())
     tab_components = {}
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Column():
             override_system_prompt = gr.Textbox(label="Override system prompt", lines=4, interactive=True)
             extend_system_prompt = gr.Textbox(label="Extend system prompt", lines=4, interactive=True)
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
         mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             llm_provider = gr.Dropdown(
                 choices=[provider for provider, model in config.model_names.items()],
@@ -118,7 +118,7 @@ def create_agent_settings_tab(webui_manager: WebuiManager):
                 info="Your API key (leave blank to use .env)"
             )
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             planner_llm_provider = gr.Dropdown(
                 choices=[provider for provider, model in config.model_names.items()],

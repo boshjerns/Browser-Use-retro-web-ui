@@ -34,7 +34,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
     input_components = set(webui_manager.get_components())
     tab_components = {}
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             browser_binary_path = gr.Textbox(
                 label="Browser Binary Path",
@@ -48,7 +48,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 interactive=True,
                 placeholder="Leave it empty if you use your default user data",
             )
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             use_own_browser = gr.Checkbox(
                 label="Use Own Browser",
@@ -75,7 +75,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 interactive=True
             )
 
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             window_w = gr.Number(
                 label="Window Width",
@@ -89,7 +89,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 info="Browser window height",
                 interactive=True
             )
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             cdp_url = gr.Textbox(
                 label="CDP URL",
@@ -102,7 +102,7 @@ def create_browser_settings_tab(webui_manager: WebuiManager):
                 info="WSS URL for browser remote debugging",
                 interactive=True,
             )
-    with gr.Group():
+    with gr.Group(elem_classes=["window-body"]):
         with gr.Row():
             save_recording_path = gr.Textbox(
                 label="Recording Path",

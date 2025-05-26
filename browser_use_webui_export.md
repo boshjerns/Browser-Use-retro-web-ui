@@ -1,3 +1,480 @@
+# Browser Use WebUI - Exported Python Files
+
+Generated on: 2025-05-26 08:24:04
+
+## Table of Contents
+
+1. [agent_settings_tab.py](#agent-settings-tabpy)
+2. [browser_settings_tab.py](#browser-settings-tabpy)
+3. [browser_use_agent_tab.py](#browser-use-agent-tabpy)
+4. [interface.py](#interfacepy)
+5. [deep_research_agent_tab.py](#deep-research-agent-tabpy)
+6. [load_save_config_tab.py](#load-save-config-tabpy)
+7. [webui.py](#webuipy)
+
+---
+
+## agent_settings_tab.py
+
+**Path:** `src/webui/components/agent_settings_tab.py`
+
+**Lines:** 269
+
+```python
+import json
+import os
+
+import gradio as gr
+from gradio.components import Component
+from typing import Any, Dict, Optional
+from src.webui.webui_manager import WebuiManager
+from src.utils import config
+import logging
+from functools import partial
+
+logger = logging.getLogger(__name__)
+
+
+def update_model_dropdown(llm_provider):
+    """
+    Update the model name dropdown with predefined models for the selected provider.
+    """
+    # Use predefined models for the selected provider
+    if llm_provider in config.model_names:
+        return gr.Dropdown(choices=config.model_names[llm_provider], value=config.model_names[llm_provider][0],
+                           interactive=True)
+    else:
+        return gr.Dropdown(choices=[], value="", interactive=True, allow_custom_value=True)
+
+
+async def update_mcp_server(mcp_file: str, webui_manager: WebuiManager):
+    """
+    Update the MCP server.
+    """
+    if hasattr(webui_manager, "bu_controller") and webui_manager.bu_controller:
+        logger.warning("⚠️ Close controller because mcp file has changed!")
+        await webui_manager.bu_controller.close_mcp_client()
+        webui_manager.bu_controller = None
+
+    if not mcp_file or not os.path.exists(mcp_file) or not mcp_file.endswith('.json'):
+        logger.warning(f"{mcp_file} is not a valid MCP file.")
+        return None, gr.update(visible=False)
+
+    with open(mcp_file, 'r') as f:
+        mcp_server = json.load(f)
+
+    return json.dumps(mcp_server, indent=2), gr.update(visible=True)
+
+
+def create_agent_settings_tab(webui_manager: WebuiManager):
+    """
+    Creates an agent settings tab.
+    """
+    input_components = set(webui_manager.get_components())
+    tab_components = {}
+
+    with gr.Group():
+        with gr.Column():
+            override_system_prompt = gr.Textbox(label="Override system prompt", lines=4, interactive=True)
+            extend_system_prompt = gr.Textbox(label="Extend system prompt", lines=4, interactive=True)
+
+    with gr.Group():
+        mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
+        mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
+
+    with gr.Group():
+        with gr.Row():
+            llm_provider = gr.Dropdown(
+                choices=[provider for provider, model in config.model_names.items()],
+                label="LLM Provider",
+                value=os.getenv("DEFAULT_LLM", "openai"),
+                info="Select LLM provider for LLM",
+                interactive=True
+            )
+            llm_model_name = gr.Dropdown(
+                label="LLM Model Name",
+                choices=config.model_names[os.getenv("DEFAULT_LLM", "openai")],
+                value=config.model_names[os.getenv("DEFAULT_LLM", "openai")][0],
+                interactive=True,
+                allow_custom_value=True,
+                info="Select a model in the dropdown options or directly type a custom model name"
+            )
+        with gr.Row():
+            llm_temperature = gr.Slider(
+                minimum=0.0,
+                maximum=2.0,
+                value=0.6,
+                step=0.1,
+                label="LLM Temperature",
+                info="Controls randomness in model outputs",
+                interactive=True
+            )
+
+            use_vision = gr.Checkbox(
+                label="Use Vision",
+                value=True,
+                info="Enable Vision(Input highlighted screenshot into LLM)",
+                interactive=True
+            )
+
+            ollama_num_ctx = gr.Slider(
+                minimum=2 ** 8,
+                maximum=2 ** 16,
+                value=16000,
+                step=1,
+                label="Ollama Context Length",
+                info="Controls max context length model needs to handle (less = faster)",
+                visible=False,
+                interactive=True
+            )
+
+        with gr.Row():
+            llm_base_url = gr.Textbox(
+                label="Base URL",
+                value="",
+                info="API endpoint URL (if required)"
+            )
+            llm_api_key = gr.Textbox(
+                label="API Key",
+                type="password",
+                value="",
+                info="Your API key (leave blank to use .env)"
+            )
+
+    with gr.Group():
+        with gr.Row():
+            planner_llm_provider = gr.Dropdown(
+                choices=[provider for provider, model in config.model_names.items()],
+                label="Planner LLM Provider",
+                info="Select LLM provider for LLM",
+                value=None,
+                interactive=True
+            )
+            planner_llm_model_name = gr.Dropdown(
+                label="Planner LLM Model Name",
+                interactive=True,
+                allow_custom_value=True,
+                info="Select a model in the dropdown options or directly type a custom model name"
+            )
+        with gr.Row():
+            planner_llm_temperature = gr.Slider(
+                minimum=0.0,
+                maximum=2.0,
+                value=0.6,
+                step=0.1,
+                label="Planner LLM Temperature",
+                info="Controls randomness in model outputs",
+                interactive=True
+            )
+
+            planner_use_vision = gr.Checkbox(
+                label="Use Vision(Planner LLM)",
+                value=False,
+                info="Enable Vision(Input highlighted screenshot into LLM)",
+                interactive=True
+            )
+
+            planner_ollama_num_ctx = gr.Slider(
+                minimum=2 ** 8,
+                maximum=2 ** 16,
+                value=16000,
+                step=1,
+                label="Ollama Context Length",
+                info="Controls max context length model needs to handle (less = faster)",
+                visible=False,
+                interactive=True
+            )
+
+        with gr.Row():
+            planner_llm_base_url = gr.Textbox(
+                label="Base URL",
+                value="",
+                info="API endpoint URL (if required)"
+            )
+            planner_llm_api_key = gr.Textbox(
+                label="API Key",
+                type="password",
+                value="",
+                info="Your API key (leave blank to use .env)"
+            )
+
+    with gr.Row():
+        max_steps = gr.Slider(
+            minimum=1,
+            maximum=1000,
+            value=100,
+            step=1,
+            label="Max Run Steps",
+            info="Maximum number of steps the agent will take",
+            interactive=True
+        )
+        max_actions = gr.Slider(
+            minimum=1,
+            maximum=100,
+            value=10,
+            step=1,
+            label="Max Number of Actions",
+            info="Maximum number of actions the agent will take per step",
+            interactive=True
+        )
+
+    with gr.Row():
+        max_input_tokens = gr.Number(
+            label="Max Input Tokens",
+            value=128000,
+            precision=0,
+            interactive=True
+        )
+        tool_calling_method = gr.Dropdown(
+            label="Tool Calling Method",
+            value="auto",
+            interactive=True,
+            allow_custom_value=True,
+            choices=['function_calling', 'json_mode', 'raw', 'auto', 'tools', "None"],
+            visible=True
+        )
+    tab_components.update(dict(
+        override_system_prompt=override_system_prompt,
+        extend_system_prompt=extend_system_prompt,
+        llm_provider=llm_provider,
+        llm_model_name=llm_model_name,
+        llm_temperature=llm_temperature,
+        use_vision=use_vision,
+        ollama_num_ctx=ollama_num_ctx,
+        llm_base_url=llm_base_url,
+        llm_api_key=llm_api_key,
+        planner_llm_provider=planner_llm_provider,
+        planner_llm_model_name=planner_llm_model_name,
+        planner_llm_temperature=planner_llm_temperature,
+        planner_use_vision=planner_use_vision,
+        planner_ollama_num_ctx=planner_ollama_num_ctx,
+        planner_llm_base_url=planner_llm_base_url,
+        planner_llm_api_key=planner_llm_api_key,
+        max_steps=max_steps,
+        max_actions=max_actions,
+        max_input_tokens=max_input_tokens,
+        tool_calling_method=tool_calling_method,
+        mcp_json_file=mcp_json_file,
+        mcp_server_config=mcp_server_config,
+    ))
+    webui_manager.add_components("agent_settings", tab_components)
+
+    llm_provider.change(
+        fn=lambda x: gr.update(visible=x == "ollama"),
+        inputs=llm_provider,
+        outputs=ollama_num_ctx
+    )
+    llm_provider.change(
+        lambda provider: update_model_dropdown(provider),
+        inputs=[llm_provider],
+        outputs=[llm_model_name]
+    )
+    planner_llm_provider.change(
+        fn=lambda x: gr.update(visible=x == "ollama"),
+        inputs=[planner_llm_provider],
+        outputs=[planner_ollama_num_ctx]
+    )
+    planner_llm_provider.change(
+        lambda provider: update_model_dropdown(provider),
+        inputs=[planner_llm_provider],
+        outputs=[planner_llm_model_name]
+    )
+
+    async def update_wrapper(mcp_file):
+        """Wrapper for handle_pause_resume."""
+        update_dict = await update_mcp_server(mcp_file, webui_manager)
+        yield update_dict
+
+    mcp_json_file.change(
+        update_wrapper,
+        inputs=[mcp_json_file],
+        outputs=[mcp_server_config, mcp_server_config]
+    )
+
+```
+
+---
+
+## browser_settings_tab.py
+
+**Path:** `src/webui/components/browser_settings_tab.py`
+
+**Lines:** 161
+
+```python
+import os
+from distutils.util import strtobool
+import gradio as gr
+import logging
+from gradio.components import Component
+
+from src.webui.webui_manager import WebuiManager
+from src.utils import config
+
+logger = logging.getLogger(__name__)
+
+async def close_browser(webui_manager: WebuiManager):
+    """
+    Close browser
+    """
+    if webui_manager.bu_current_task and not webui_manager.bu_current_task.done():
+        webui_manager.bu_current_task.cancel()
+        webui_manager.bu_current_task = None
+
+    if webui_manager.bu_browser_context:
+        logger.info("⚠️ Closing browser context when changing browser config.")
+        await webui_manager.bu_browser_context.close()
+        webui_manager.bu_browser_context = None
+
+    if webui_manager.bu_browser:
+        logger.info("⚠️ Closing browser when changing browser config.")
+        await webui_manager.bu_browser.close()
+        webui_manager.bu_browser = None
+
+def create_browser_settings_tab(webui_manager: WebuiManager):
+    """
+    Creates a browser settings tab.
+    """
+    input_components = set(webui_manager.get_components())
+    tab_components = {}
+
+    with gr.Group():
+        with gr.Row():
+            browser_binary_path = gr.Textbox(
+                label="Browser Binary Path",
+                lines=1,
+                interactive=True,
+                placeholder="e.g. '/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome'"
+            )
+            browser_user_data_dir = gr.Textbox(
+                label="Browser User Data Dir",
+                lines=1,
+                interactive=True,
+                placeholder="Leave it empty if you use your default user data",
+            )
+    with gr.Group():
+        with gr.Row():
+            use_own_browser = gr.Checkbox(
+                label="Use Own Browser",
+                value=bool(strtobool(os.getenv("USE_OWN_BROWSER", "false"))),
+                info="Use your existing browser instance",
+                interactive=True
+            )
+            keep_browser_open = gr.Checkbox(
+                label="Keep Browser Open",
+                value=bool(strtobool(os.getenv("KEEP_BROWSER_OPEN", "true"))),
+                info="Keep Browser Open between Tasks",
+                interactive=True
+            )
+            headless = gr.Checkbox(
+                label="Headless Mode",
+                value=False,
+                info="Run browser without GUI",
+                interactive=True
+            )
+            disable_security = gr.Checkbox(
+                label="Disable Security",
+                value=False,
+                info="Disable browser security",
+                interactive=True
+            )
+
+    with gr.Group():
+        with gr.Row():
+            window_w = gr.Number(
+                label="Window Width",
+                value=1280,
+                info="Browser window width",
+                interactive=True
+            )
+            window_h = gr.Number(
+                label="Window Height",
+                value=1100,
+                info="Browser window height",
+                interactive=True
+            )
+    with gr.Group():
+        with gr.Row():
+            cdp_url = gr.Textbox(
+                label="CDP URL",
+                value=os.getenv("BROWSER_CDP", None),
+                info="CDP URL for browser remote debugging",
+                interactive=True,
+            )
+            wss_url = gr.Textbox(
+                label="WSS URL",
+                info="WSS URL for browser remote debugging",
+                interactive=True,
+            )
+    with gr.Group():
+        with gr.Row():
+            save_recording_path = gr.Textbox(
+                label="Recording Path",
+                placeholder="e.g. ./tmp/record_videos",
+                info="Path to save browser recordings",
+                interactive=True,
+            )
+
+            save_trace_path = gr.Textbox(
+                label="Trace Path",
+                placeholder="e.g. ./tmp/traces",
+                info="Path to save Agent traces",
+                interactive=True,
+            )
+
+        with gr.Row():
+            save_agent_history_path = gr.Textbox(
+                label="Agent History Save Path",
+                value="./tmp/agent_history",
+                info="Specify the directory where agent history should be saved.",
+                interactive=True,
+            )
+            save_download_path = gr.Textbox(
+                label="Save Directory for browser downloads",
+                value="./tmp/downloads",
+                info="Specify the directory where downloaded files should be saved.",
+                interactive=True,
+            )
+    tab_components.update(
+        dict(
+            browser_binary_path=browser_binary_path,
+            browser_user_data_dir=browser_user_data_dir,
+            use_own_browser=use_own_browser,
+            keep_browser_open=keep_browser_open,
+            headless=headless,
+            disable_security=disable_security,
+            save_recording_path=save_recording_path,
+            save_trace_path=save_trace_path,
+            save_agent_history_path=save_agent_history_path,
+            save_download_path=save_download_path,
+            cdp_url=cdp_url,
+            wss_url=wss_url,
+            window_h=window_h,
+            window_w=window_w,
+        )
+    )
+    webui_manager.add_components("browser_settings", tab_components)
+
+    async def close_wrapper():
+        """Wrapper for handle_clear."""
+        await close_browser(webui_manager)
+
+    headless.change(close_wrapper)
+    keep_browser_open.change(close_wrapper)
+    disable_security.change(close_wrapper)
+    use_own_browser.change(close_wrapper)
+
+```
+
+---
+
+## browser_use_agent_tab.py
+
+**Path:** `src/webui/components/browser_use_agent_tab.py`
+
+**Lines:** 1083
+
+```python
 import asyncio
 import json
 import logging
@@ -1009,12 +1486,12 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
             run_button = gr.Button("▶️ Submit Task", variant="primary", scale=3)
 
         browser_view = gr.HTML(
-            value="<div class='window-body' style='width:100%; height:50vh; display:flex; justify-content:center; align-items:center;'><p style='color:#00ff88;'>Browser View (Requires Headless=True)</p></div>",
+            value="<div style='width:100%; height:50vh; display:flex; justify-content:center; align-items:center; border:1px solid #ccc; background-color:#f0f0f0;'><p>Browser View (Requires Headless=True)</p></div>",
             label="Browser Live View",
             elem_id="browser_view",
             visible=False,
         )
-        with gr.Column(elem_classes=["window-body"]):
+        with gr.Column():
             gr.Markdown("### Task Outputs")
             agent_history_file = gr.File(label="Agent History JSON", interactive=False)
             recording_gif = gr.Image(
@@ -1081,3 +1558,746 @@ def create_browser_use_agent_tab(webui_manager: WebuiManager):
         fn=pause_resume_wrapper, inputs=None, outputs=run_tab_outputs
     )
     clear_button.click(fn=clear_wrapper, inputs=None, outputs=run_tab_outputs)
+
+```
+
+---
+
+## interface.py
+
+**Path:** `src/webui/interface.py`
+
+**Lines:** 170
+
+```python
+import gradio as gr
+
+# Your component imports
+from src.webui.webui_manager import WebuiManager
+from src.webui.components.agent_settings_tab import create_agent_settings_tab
+from src.webui.components.browser_settings_tab import create_browser_settings_tab
+from src.webui.components.browser_use_agent_tab import create_browser_use_agent_tab
+from src.webui.components.deep_research_agent_tab import create_deep_research_agent_tab
+from src.webui.components.load_save_config_tab import create_load_save_config_tab
+
+theme_map = {
+    "Windows 98 RGB": gr.themes.Base(),
+    "Ocean": gr.themes.Ocean()
+}
+
+def create_ui(theme_name="Windows 98 RGB"):
+    head_html = '''
+<link rel="stylesheet" href="https://unpkg.com/98.css">
+<style>
+/* Base body + animated background */
+body, html {
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #000000, #1a1a1a) fixed;
+    font-family: "Pixelated MS Sans Serif", Tahoma, monospace !important;
+    color: #00ffcc;
+    background-size: 400% 400%;
+    animation: rgbWave 10s ease infinite;
+}
+
+@keyframes rgbWave {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Container styling */
+.gradio-container {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    padding: 16px;
+    border: 2px solid #00ffff;
+    border-radius: 6px;
+    box-shadow: 0 0 12px #00ffff88, inset 0 0 6px #00ffff55;
+}
+
+/* RGB Title Bar */
+.title-bar {
+    background: linear-gradient(90deg, red, orange, yellow, green, cyan, blue, violet);
+    color: black;
+    text-align: center;
+    font-weight: bold;
+    padding: 4px;
+    font-size: 16px;
+    border: 2px solid #fff;
+    animation: glow 5s linear infinite;
+}
+
+@keyframes glow {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+/* Window Body */
+.window-body {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(3px);
+    padding: 12px;
+    border: 1px solid #00cccc;
+    box-shadow: inset 0 0 4px #00ffff55;
+    color: #e0ffff;
+    font-size: 14px;
+}
+
+/* Tabs RGB highlight */
+.gr-tabs > div[role="tablist"] {
+    background: transparent;
+    border-bottom: 2px solid #00ffff;
+}
+.gr-tabs button {
+    background: #111111;
+    color: #00ffcc;
+    border: 1px solid #00ffff66;
+    margin-right: 4px;
+    padding: 4px 10px;
+    box-shadow: 0 0 4px #00ffff33;
+    font-family: "Pixelated MS Sans Serif", Tahoma, monospace !important;
+}
+.gr-tabs button.selected {
+    background: #00ffff33;
+    box-shadow: 0 0 8px #00ffff88;
+    border-bottom: none;
+}
+
+/* Inputs, buttons, dropdowns styled retro-hacker */
+input, textarea, select, button {
+    background: black;
+    color: #00ffcc;
+    border: 1px solid #00ffff;
+    font-family: "Pixelated MS Sans Serif", Tahoma, monospace !important;
+    padding: 5px 10px;
+    border-radius: 3px;
+    box-shadow: 0 0 6px #00ffff44;
+}
+input:hover, textarea:hover, select:hover, button:hover {
+    background: #111111;
+    box-shadow: 0 0 8px #00ffff99;
+}
+
+/* Flickering checkbox effect */
+input[type="checkbox"] {
+    accent-color: #00ffff;
+    box-shadow: 0 0 3px #00ffff;
+}
+
+/* File + sliders */
+input[type="file"], input[type="range"] {
+    background-color: transparent;
+    border: none;
+    color: #00ffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #111;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #00ffff, #ff00ff);
+  border-radius: 6px;
+}
+</style>
+'''
+
+    ui_manager = WebuiManager()
+
+    with gr.Blocks(title="Browser Use WebUI", theme=theme_map[theme_name], head=head_html) as demo:
+        with gr.Row():
+            gr.Markdown("# 🖥️ Browser Use WebUI — RGB98", elem_classes=["title-bar"])
+
+        with gr.Tabs(elem_classes=["window"]):
+            with gr.TabItem("⚙️ Agent Settings"):
+                with gr.Column(elem_classes=["window-body"]):
+                    create_agent_settings_tab(ui_manager)
+
+            with gr.TabItem("🌐 Browser Settings"):
+                with gr.Column(elem_classes=["window-body"]):
+                    create_browser_settings_tab(ui_manager)
+
+            with gr.TabItem("🤖 Run Agent"):
+                with gr.Column(elem_classes=["window-body"]):
+                    create_browser_use_agent_tab(ui_manager)
+
+            with gr.TabItem("🎁 Agent Marketplace"):
+                with gr.Column(elem_classes=["window-body"]):
+                    gr.Markdown("### Browse agents in style")
+                    with gr.Tabs():
+                        with gr.TabItem("Deep Research"):
+                            create_deep_research_agent_tab(ui_manager)
+
+            with gr.TabItem("📁 Load & Save Config"):
+                with gr.Column(elem_classes=["window-body"]):
+                    create_load_save_config_tab(ui_manager)
+
+    return demo
+
+if __name__ == "__main__":
+    app = create_ui()
+    app.launch()
+
+```
+
+---
+
+## deep_research_agent_tab.py
+
+**Path:** `src/webui/components/deep_research_agent_tab.py`
+
+**Lines:** 451
+
+```python
+import gradio as gr
+from gradio.components import Component
+from functools import partial
+
+from src.webui.webui_manager import WebuiManager
+from src.utils import config
+import logging
+import os
+from typing import Any, Dict, AsyncGenerator, Optional, Tuple, Union
+import asyncio
+import json
+from src.agent.deep_research.deep_research_agent import DeepResearchAgent
+from src.utils import llm_provider
+
+logger = logging.getLogger(__name__)
+
+
+async def _initialize_llm(provider: Optional[str], model_name: Optional[str], temperature: float,
+                          base_url: Optional[str], api_key: Optional[str], num_ctx: Optional[int] = None):
+    """Initializes the LLM based on settings. Returns None if provider/model is missing."""
+    if not provider or not model_name:
+        logger.info("LLM Provider or Model Name not specified, LLM will be None.")
+        return None
+    try:
+        logger.info(f"Initializing LLM: Provider={provider}, Model={model_name}, Temp={temperature}")
+        # Use your actual LLM provider logic here
+        llm = llm_provider.get_llm_model(
+            provider=provider,
+            model_name=model_name,
+            temperature=temperature,
+            base_url=base_url or None,
+            api_key=api_key or None,
+            num_ctx=num_ctx if provider == "ollama" else None
+        )
+        return llm
+    except Exception as e:
+        logger.error(f"Failed to initialize LLM: {e}", exc_info=True)
+        gr.Warning(
+            f"Failed to initialize LLM '{model_name}' for provider '{provider}'. Please check settings. Error: {e}")
+        return None
+
+
+def _read_file_safe(file_path: str) -> Optional[str]:
+    """Safely read a file, returning None if it doesn't exist or on error."""
+    if not os.path.exists(file_path):
+        return None
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception as e:
+        logger.error(f"Error reading file {file_path}: {e}")
+        return None
+
+
+# --- Deep Research Agent Specific Logic ---
+
+async def run_deep_research(webui_manager: WebuiManager, components: Dict[Component, Any]) -> AsyncGenerator[
+    Dict[Component, Any], None]:
+    """Handles initializing and running the DeepResearchAgent."""
+
+    # --- Get Components ---
+    research_task_comp = webui_manager.get_component_by_id("deep_research_agent.research_task")
+    resume_task_id_comp = webui_manager.get_component_by_id("deep_research_agent.resume_task_id")
+    parallel_num_comp = webui_manager.get_component_by_id("deep_research_agent.parallel_num")
+    save_dir_comp = webui_manager.get_component_by_id(
+        "deep_research_agent.max_query")  # Note: component ID seems misnamed in original code
+    start_button_comp = webui_manager.get_component_by_id("deep_research_agent.start_button")
+    stop_button_comp = webui_manager.get_component_by_id("deep_research_agent.stop_button")
+    markdown_display_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_display")
+    markdown_download_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_download")
+    mcp_server_config_comp = webui_manager.get_component_by_id("deep_research_agent.mcp_server_config")
+
+    # --- 1. Get Task and Settings ---
+    task_topic = components.get(research_task_comp, "").strip()
+    task_id_to_resume = components.get(resume_task_id_comp, "").strip() or None
+    max_parallel_agents = int(components.get(parallel_num_comp, 1))
+    base_save_dir = components.get(save_dir_comp, "./tmp/deep_research")
+    mcp_server_config_str = components.get(mcp_server_config_comp)
+    mcp_config = json.loads(mcp_server_config_str) if mcp_server_config_str else None
+
+    if not task_topic:
+        gr.Warning("Please enter a research task.")
+        yield {start_button_comp: gr.update(interactive=True)}  # Re-enable start button
+        return
+
+    # Store base save dir for stop handler
+    webui_manager.dr_save_dir = base_save_dir
+    os.makedirs(base_save_dir, exist_ok=True)
+
+    # --- 2. Initial UI Update ---
+    yield {
+        start_button_comp: gr.update(value="⏳ Running...", interactive=False),
+        stop_button_comp: gr.update(interactive=True),
+        research_task_comp: gr.update(interactive=False),
+        resume_task_id_comp: gr.update(interactive=False),
+        parallel_num_comp: gr.update(interactive=False),
+        save_dir_comp: gr.update(interactive=False),
+        markdown_display_comp: gr.update(value="Starting research..."),
+        markdown_download_comp: gr.update(value=None, interactive=False)
+    }
+
+    agent_task = None
+    running_task_id = None
+    plan_file_path = None
+    report_file_path = None
+    last_plan_content = None
+    last_plan_mtime = 0
+
+    try:
+        # --- 3. Get LLM and Browser Config from other tabs ---
+        # Access settings values via components dict, getting IDs from webui_manager
+        def get_setting(tab: str, key: str, default: Any = None):
+            comp = webui_manager.id_to_component.get(f"{tab}.{key}")
+            return components.get(comp, default) if comp else default
+
+        # LLM Config (from agent_settings tab)
+        llm_provider_name = get_setting("agent_settings", "llm_provider")
+        llm_model_name = get_setting("agent_settings", "llm_model_name")
+        llm_temperature = max(get_setting("agent_settings", "llm_temperature", 0.5), 0.5)
+        llm_base_url = get_setting("agent_settings", "llm_base_url")
+        llm_api_key = get_setting("agent_settings", "llm_api_key")
+        ollama_num_ctx = get_setting("agent_settings", "ollama_num_ctx")
+
+        llm = await _initialize_llm(
+            llm_provider_name, llm_model_name, llm_temperature, llm_base_url, llm_api_key,
+            ollama_num_ctx if llm_provider_name == "ollama" else None
+        )
+        if not llm:
+            raise ValueError("LLM Initialization failed. Please check Agent Settings.")
+
+        # Browser Config (from browser_settings tab)
+        # Note: DeepResearchAgent constructor takes a dict, not full Browser/Context objects
+        browser_config_dict = {
+            "headless": get_setting("browser_settings", "headless", False),
+            "disable_security": get_setting("browser_settings", "disable_security", False),
+            "browser_binary_path": get_setting("browser_settings", "browser_binary_path"),
+            "user_data_dir": get_setting("browser_settings", "browser_user_data_dir"),
+            "window_width": int(get_setting("browser_settings", "window_w", 1280)),
+            "window_height": int(get_setting("browser_settings", "window_h", 1100)),
+            # Add other relevant fields if DeepResearchAgent accepts them
+        }
+
+        # --- 4. Initialize or Get Agent ---
+        if not webui_manager.dr_agent:
+            webui_manager.dr_agent = DeepResearchAgent(
+                llm=llm,
+                browser_config=browser_config_dict,
+                mcp_server_config=mcp_config
+            )
+            logger.info("DeepResearchAgent initialized.")
+
+        # --- 5. Start Agent Run ---
+        agent_run_coro = webui_manager.dr_agent.run(
+            topic=task_topic,
+            task_id=task_id_to_resume,
+            save_dir=base_save_dir,
+            max_parallel_browsers=max_parallel_agents
+        )
+        agent_task = asyncio.create_task(agent_run_coro)
+        webui_manager.dr_current_task = agent_task
+
+        # Wait briefly for the agent to start and potentially create the task ID/folder
+        await asyncio.sleep(1.0)
+
+        # Determine the actual task ID being used (agent sets this)
+        running_task_id = webui_manager.dr_agent.current_task_id
+        if not running_task_id:
+            # Agent might not have set it yet, try to get from result later? Risky.
+            # Or derive from resume_task_id if provided?
+            running_task_id = task_id_to_resume
+            if not running_task_id:
+                logger.warning("Could not determine running task ID immediately.")
+                # We can still monitor, but might miss initial plan if ID needed for path
+            else:
+                logger.info(f"Assuming task ID based on resume ID: {running_task_id}")
+        else:
+            logger.info(f"Agent started with Task ID: {running_task_id}")
+
+        webui_manager.dr_task_id = running_task_id  # Store for stop handler
+
+        # --- 6. Monitor Progress via research_plan.md ---
+        if running_task_id:
+            task_specific_dir = os.path.join(base_save_dir, str(running_task_id))
+            plan_file_path = os.path.join(task_specific_dir, "research_plan.md")
+            report_file_path = os.path.join(task_specific_dir, "report.md")
+            logger.info(f"Monitoring plan file: {plan_file_path}")
+        else:
+            logger.warning("Cannot monitor plan file: Task ID unknown.")
+            plan_file_path = None
+        last_plan_content = None
+        while not agent_task.done():
+            update_dict = {}
+            update_dict[resume_task_id_comp] = gr.update(value=running_task_id)
+            agent_stopped = getattr(webui_manager.dr_agent, 'stopped', False)
+            if agent_stopped:
+                logger.info("Stop signal detected from agent state.")
+                break  # Exit monitoring loop
+
+            # Check and update research plan display
+            if plan_file_path:
+                try:
+                    current_mtime = os.path.getmtime(plan_file_path) if os.path.exists(plan_file_path) else 0
+                    if current_mtime > last_plan_mtime:
+                        logger.info(f"Detected change in {plan_file_path}")
+                        plan_content = _read_file_safe(plan_file_path)
+                        if last_plan_content is None or (
+                                plan_content is not None and plan_content != last_plan_content):
+                            update_dict[markdown_display_comp] = gr.update(value=plan_content)
+                            last_plan_content = plan_content
+                            last_plan_mtime = current_mtime
+                        elif plan_content is None:
+                            # File might have been deleted or became unreadable
+                            last_plan_mtime = 0  # Reset to force re-read attempt later
+                except Exception as e:
+                    logger.warning(f"Error checking/reading plan file {plan_file_path}: {e}")
+                    # Avoid continuous logging for the same error
+                    await asyncio.sleep(2.0)
+
+            # Yield updates if any
+            if update_dict:
+                yield update_dict
+
+            await asyncio.sleep(1.0)  # Check file changes every second
+
+        # --- 7. Task Finalization ---
+        logger.info("Agent task processing finished. Awaiting final result...")
+        final_result_dict = await agent_task  # Get result or raise exception
+        logger.info(f"Agent run completed. Result keys: {final_result_dict.keys() if final_result_dict else 'None'}")
+
+        # Try to get task ID from result if not known before
+        if not running_task_id and final_result_dict and 'task_id' in final_result_dict:
+            running_task_id = final_result_dict['task_id']
+            webui_manager.dr_task_id = running_task_id
+            task_specific_dir = os.path.join(base_save_dir, str(running_task_id))
+            report_file_path = os.path.join(task_specific_dir, "report.md")
+            logger.info(f"Task ID confirmed from result: {running_task_id}")
+
+        final_ui_update = {}
+        if report_file_path and os.path.exists(report_file_path):
+            logger.info(f"Loading final report from: {report_file_path}")
+            report_content = _read_file_safe(report_file_path)
+            if report_content:
+                final_ui_update[markdown_display_comp] = gr.update(value=report_content)
+                final_ui_update[markdown_download_comp] = gr.File(value=report_file_path,
+                                                                  label=f"Report ({running_task_id}.md)",
+                                                                  interactive=True)
+            else:
+                final_ui_update[markdown_display_comp] = gr.update(
+                    value="# Research Complete\n\n*Error reading final report file.*")
+        elif final_result_dict and 'report' in final_result_dict:
+            logger.info("Using report content directly from agent result.")
+            # If agent directly returns report content
+            final_ui_update[markdown_display_comp] = gr.update(value=final_result_dict['report'])
+            # Cannot offer download if only content is available
+            final_ui_update[markdown_download_comp] = gr.update(value=None, label="Download Research Report",
+                                                                interactive=False)
+        else:
+            logger.warning("Final report file not found and not in result dict.")
+            final_ui_update[markdown_display_comp] = gr.update(value="# Research Complete\n\n*Final report not found.*")
+
+        yield final_ui_update
+
+
+    except Exception as e:
+        logger.error(f"Error during Deep Research Agent execution: {e}", exc_info=True)
+        gr.Error(f"Research failed: {e}")
+        yield {markdown_display_comp: gr.update(value=f"# Research Failed\n\n**Error:**\n```\n{e}\n```")}
+
+    finally:
+        # --- 8. Final UI Reset ---
+        webui_manager.dr_current_task = None  # Clear task reference
+        webui_manager.dr_task_id = None  # Clear running task ID
+
+        yield {
+            start_button_comp: gr.update(value="▶️ Run", interactive=True),
+            stop_button_comp: gr.update(interactive=False),
+            research_task_comp: gr.update(interactive=True),
+            resume_task_id_comp: gr.update(value="", interactive=True),
+            parallel_num_comp: gr.update(interactive=True),
+            save_dir_comp: gr.update(interactive=True),
+            # Keep download button enabled if file exists
+            markdown_download_comp: gr.update() if report_file_path and os.path.exists(report_file_path) else gr.update(
+                interactive=False)
+        }
+
+
+async def stop_deep_research(webui_manager: WebuiManager) -> Dict[Component, Any]:
+    """Handles the Stop button click."""
+    logger.info("Stop button clicked for Deep Research.")
+    agent = webui_manager.dr_agent
+    task = webui_manager.dr_current_task
+    task_id = webui_manager.dr_task_id
+    base_save_dir = webui_manager.dr_save_dir
+
+    stop_button_comp = webui_manager.get_component_by_id("deep_research_agent.stop_button")
+    start_button_comp = webui_manager.get_component_by_id("deep_research_agent.start_button")
+    markdown_display_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_display")
+    markdown_download_comp = webui_manager.get_component_by_id("deep_research_agent.markdown_download")
+
+    final_update = {
+        stop_button_comp: gr.update(interactive=False, value="⏹️ Stopping...")
+    }
+
+    if agent and task and not task.done():
+        logger.info("Signalling DeepResearchAgent to stop.")
+        try:
+            # Assuming stop is synchronous or sets a flag quickly
+            await agent.stop()
+        except Exception as e:
+            logger.error(f"Error calling agent.stop(): {e}")
+
+        # The run_deep_research loop should detect the stop and exit.
+        # We yield an intermediate "Stopping..." state. The final reset is done by run_deep_research.
+
+        # Try to show the final report if available after stopping
+        await asyncio.sleep(1.5)  # Give agent a moment to write final files potentially
+        report_file_path = None
+        if task_id and base_save_dir:
+            report_file_path = os.path.join(base_save_dir, str(task_id), "report.md")
+
+        if report_file_path and os.path.exists(report_file_path):
+            report_content = _read_file_safe(report_file_path)
+            if report_content:
+                final_update[markdown_display_comp] = gr.update(
+                    value=report_content + "\n\n---\n*Research stopped by user.*")
+                final_update[markdown_download_comp] = gr.File(value=report_file_path, label=f"Report ({task_id}.md)",
+                                                               interactive=True)
+            else:
+                final_update[markdown_display_comp] = gr.update(
+                    value="# Research Stopped\n\n*Error reading final report file after stop.*")
+        else:
+            final_update[markdown_display_comp] = gr.update(value="# Research Stopped by User")
+
+        # Keep start button disabled, run_deep_research finally block will re-enable it.
+        final_update[start_button_comp] = gr.update(interactive=False)
+
+    else:
+        logger.warning("Stop clicked but no active research task found.")
+        # Reset UI state just in case
+        final_update = {
+            start_button_comp: gr.update(interactive=True),
+            stop_button_comp: gr.update(interactive=False),
+            webui_manager.get_component_by_id("deep_research_agent.research_task"): gr.update(interactive=True),
+            webui_manager.get_component_by_id("deep_research_agent.resume_task_id"): gr.update(interactive=True),
+            webui_manager.get_component_by_id("deep_research_agent.max_iteration"): gr.update(interactive=True),
+            webui_manager.get_component_by_id("deep_research_agent.max_query"): gr.update(interactive=True),
+        }
+
+    return final_update
+
+
+async def update_mcp_server(mcp_file: str, webui_manager: WebuiManager):
+    """
+    Update the MCP server.
+    """
+    if hasattr(webui_manager, "dr_agent") and webui_manager.dr_agent:
+        logger.warning("⚠️ Close controller because mcp file has changed!")
+        await webui_manager.dr_agent.close_mcp_client()
+
+    if not mcp_file or not os.path.exists(mcp_file) or not mcp_file.endswith('.json'):
+        logger.warning(f"{mcp_file} is not a valid MCP file.")
+        return None, gr.update(visible=False)
+
+    with open(mcp_file, 'r') as f:
+        mcp_server = json.load(f)
+
+    return json.dumps(mcp_server, indent=2), gr.update(visible=True)
+
+
+def create_deep_research_agent_tab(webui_manager: WebuiManager):
+    """
+    Creates a deep research agent tab
+    """
+    input_components = set(webui_manager.get_components())
+    tab_components = {}
+
+    with gr.Group():
+        with gr.Row():
+            mcp_json_file = gr.File(label="MCP server json", interactive=True, file_types=[".json"])
+            mcp_server_config = gr.Textbox(label="MCP server", lines=6, interactive=True, visible=False)
+
+    with gr.Group():
+        research_task = gr.Textbox(label="Research Task", lines=5,
+                                   value="Give me a detailed travel plan to Switzerland from June 1st to 10th.",
+                                   interactive=True)
+        with gr.Row():
+            resume_task_id = gr.Textbox(label="Resume Task ID", value="",
+                                        interactive=True)
+            parallel_num = gr.Number(label="Parallel Agent Num", value=1,
+                                     precision=0,
+                                     interactive=True)
+            max_query = gr.Textbox(label="Research Save Dir", value="./tmp/deep_research",
+                                   interactive=True)
+    with gr.Row():
+        stop_button = gr.Button("⏹️ Stop", variant="stop", scale=2)
+        start_button = gr.Button("▶️ Run", variant="primary", scale=3)
+    with gr.Group():
+        markdown_display = gr.Markdown(label="Research Report")
+        markdown_download = gr.File(label="Download Research Report", interactive=False)
+    tab_components.update(
+        dict(
+            research_task=research_task,
+            parallel_num=parallel_num,
+            max_query=max_query,
+            start_button=start_button,
+            stop_button=stop_button,
+            markdown_display=markdown_display,
+            markdown_download=markdown_download,
+            resume_task_id=resume_task_id,
+            mcp_json_file=mcp_json_file,
+            mcp_server_config=mcp_server_config,
+        )
+    )
+    webui_manager.add_components("deep_research_agent", tab_components)
+    webui_manager.init_deep_research_agent()
+
+    async def update_wrapper(mcp_file):
+        """Wrapper for handle_pause_resume."""
+        update_dict = await update_mcp_server(mcp_file, webui_manager)
+        yield update_dict
+
+    mcp_json_file.change(
+        update_wrapper,
+        inputs=[mcp_json_file],
+        outputs=[mcp_server_config, mcp_server_config]
+    )
+
+    dr_tab_outputs = list(tab_components.values())
+    all_managed_inputs = set(webui_manager.get_components())
+
+    # --- Define Event Handler Wrappers ---
+    async def start_wrapper(comps: Dict[Component, Any]) -> AsyncGenerator[Dict[Component, Any], None]:
+        async for update in run_deep_research(webui_manager, comps):
+            yield update
+
+    async def stop_wrapper() -> AsyncGenerator[Dict[Component, Any], None]:
+        update_dict = await stop_deep_research(webui_manager)
+        yield update_dict
+
+    # --- Connect Handlers ---
+    start_button.click(
+        fn=start_wrapper,
+        inputs=all_managed_inputs,
+        outputs=dr_tab_outputs
+    )
+
+    stop_button.click(
+        fn=stop_wrapper,
+        inputs=None,
+        outputs=dr_tab_outputs
+    )
+
+```
+
+---
+
+## load_save_config_tab.py
+
+**Path:** `src/webui/components/load_save_config_tab.py`
+
+**Lines:** 50
+
+```python
+import gradio as gr
+from gradio.components import Component
+
+from src.webui.webui_manager import WebuiManager
+from src.utils import config
+
+
+def create_load_save_config_tab(webui_manager: WebuiManager):
+    """
+    Creates a load and save config tab.
+    """
+    input_components = set(webui_manager.get_components())
+    tab_components = {}
+
+    config_file = gr.File(
+        label="Load UI Settings from json",
+        file_types=[".json"],
+        interactive=True
+    )
+    with gr.Row():
+        load_config_button = gr.Button("Load Config", variant="primary")
+        save_config_button = gr.Button("Save UI Settings", variant="primary")
+
+    config_status = gr.Textbox(
+        label="Status",
+        lines=2,
+        interactive=False
+    )
+
+    tab_components.update(dict(
+        load_config_button=load_config_button,
+        save_config_button=save_config_button,
+        config_status=config_status,
+        config_file=config_file,
+    ))
+
+    webui_manager.add_components("load_save_config", tab_components)
+
+    save_config_button.click(
+        fn=webui_manager.save_config,
+        inputs=set(webui_manager.get_components()),
+        outputs=[config_status]
+    )
+
+    load_config_button.click(
+        fn=webui_manager.load_config,
+        inputs=[config_file],
+        outputs=webui_manager.get_components(),
+    )
+
+
+```
+
+---
+
+## webui.py
+
+**Path:** `webui.py`
+
+**Lines:** 19
+
+```python
+from dotenv import load_dotenv
+load_dotenv()
+import argparse
+from src.webui.interface import theme_map, create_ui
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Gradio WebUI for Browser Agent")
+    parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP address to bind to")
+    parser.add_argument("--port", type=int, default=7788, help="Port to listen on")
+    parser.add_argument("--theme", type=str, default="Windows 98 RGB", choices=theme_map.keys(), help="Theme to use for the UI")
+    args = parser.parse_args()
+
+    demo = create_ui(theme_name=args.theme)
+    demo.queue().launch(server_name=args.ip, server_port=args.port)
+
+
+if __name__ == '__main__':
+    main()
+
+```
+
+---
+
